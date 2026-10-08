@@ -29,6 +29,12 @@ jobs:
       with:
         gpu: nvidia/a10g
         cuda-toolkit: '12.8'
+    # The action installs the compiler and the runtime; Cupoch (through RMM,
+    # Thrust and its own code) also builds against these.
+    - name: The rest of the CUDA libraries Cupoch builds against
+      run: |
+        sudo apt-get install -y --no-install-recommends cuda-nvtx-12-8 cuda-cccl-12-8 \
+          libcusolver-dev-12-8 libcusparse-dev-12-8 libcurand-dev-12-8 libcufft-dev-12-8
     - name: Install dependencies
       run: ./scripts/actions/install_deps_ubuntu.sh
     # The simulator stands in for the CUDA runtime at run time, so the shared
