@@ -1,0 +1,49 @@
+name: Ubuntu (simulated GPU)
+
+# ubuntu.yml builds Cupoch and its unit tests but does not run them, since
+# GitHub's runners have no GPU. PantheonSim simulates an NVIDIA A10G (sm_86,
+# the architecture the build targets) on the runner's CPU, so the unit tests
+# run here. It checks results, not speed; a real GPU is still the final word.
+on:
+  push:
+    branches: [ main, ci-simulated-gpu ]
+  pull_request:
+    branches: [ main ]
+
+# The job reads the repository and nothing else. The simulator's action uses
+# no token or secrets, and installs packages only from Ubuntu and NVIDIA.
+permissions:
+  contents: read
+
+jobs:
+  unittests:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Simulated GPU (NVIDIA A10G) and CUDA 12.8
+      uses: pantheongpu/pantheonsim@6bf58793e3a133d3091d425c9fe773f23a54deb0 # pantheonsim 335, 336, 337, rehearsal
+      with:
+        gpu: nvidia/a10g
+        cuda-toolkit: '12.8'
+    - name: Install dependencies
+      run: ./scripts/actions/install_deps_ubuntu.sh
+    # The simulator stands in for the CUDA runtime at run time, so the shared
+    # one is linked.
+    - name: CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_GLEW=ON -DBUILD_GLFW=ON -DBUILD_PNG=ON -DBUILD_JSONCPP=ON \
+          -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared
+    - name: Build the unit tests
+      run: |
+        cd build
+        make -j"$(nproc)" unittests
+    - name: Unit tests on the simulated GPU
+      run: |
+        cd build
+        vgpu run "$(find . -name unittests -type f | head -n 1)"
