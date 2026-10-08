@@ -25,7 +25,7 @@ jobs:
       with:
         submodules: true
     - name: Simulated GPU (NVIDIA A10G) and CUDA 12.8
-      uses: pantheongpu/pantheonsim@687180e7e3272ce68965cf550416426678588d8c # pantheonsim 335, 336, 337, 343, rehearsal
+      uses: pantheongpu/pantheonsim@c96ec7e0c3cf4e01491070bc87b739dd73d5f560 # pantheonsim 335, 336, 337, 343, 344, rehearsal
       with:
         gpu: nvidia/a10g
         cuda-toolkit: '12.8'
