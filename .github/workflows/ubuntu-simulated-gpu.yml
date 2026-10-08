@@ -35,10 +35,13 @@ jobs:
       run: |
         sudo apt-get install -y --no-install-recommends cuda-nvtx-12-8 cuda-cccl-12-8 \
           libcusolver-dev-12-8 libcusparse-dev-12-8 libcurand-dev-12-8 libcufft-dev-12-8
-    - name: Where the toolkit's headers are
+    # RMM includes <nvtx3/nvtx3.hpp>, which the packages above do not carry:
+    # NVIDIA publishes it as a header-only library (Apache-2.0).
+    - name: NVTX headers
       run: |
-        find /usr -name nvtx3.hpp 2>/dev/null | head -n 3
-        ls -d /usr/local/cuda*/ /usr/local/cuda/include 2>/dev/null | head
+        git clone -q https://github.com/NVIDIA/NVTX.git "$RUNNER_TEMP/NVTX"
+        git -C "$RUNNER_TEMP/NVTX" checkout -q e170594ac7cf1dac584da473d4ca9301087090c1   # v3.1.0
+        echo "CPATH=/usr/local/cuda-12.8/include:$RUNNER_TEMP/NVTX/c/include" >> "$GITHUB_ENV"
     - name: Install dependencies
       run: ./scripts/actions/install_deps_ubuntu.sh
     # The simulator stands in for the CUDA runtime at run time, so the shared
@@ -50,9 +53,6 @@ jobs:
         cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_GLEW=ON -DBUILD_GLFW=ON -DBUILD_PNG=ON -DBUILD_JSONCPP=ON \
           -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared
     - name: Build the unit tests
-      env:
-        # the plain C++ files (RMM's headers) need the toolkit's headers too
-        CPATH: /usr/local/cuda-12.8/include
       run: |
         cd build
         make -j"$(nproc)" unittests
