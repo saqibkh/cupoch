@@ -45,13 +45,13 @@ jobs:
     - name: Install dependencies
       run: ./scripts/actions/install_deps_ubuntu.sh
     # The simulator stands in for the CUDA runtime at run time, so the shared
-    # one is linked.
+    # one is linked (the second option is for the FindCUDA module).
     - name: CMake
       run: |
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_GLEW=ON -DBUILD_GLFW=ON -DBUILD_PNG=ON -DBUILD_JSONCPP=ON \
-          -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared
+          -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared -DCUDA_USE_STATIC_CUDA_RUNTIME=OFF
     - name: Build the unit tests
       run: |
         cd build
