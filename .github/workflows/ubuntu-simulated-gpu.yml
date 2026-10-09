@@ -56,16 +56,7 @@ jobs:
       run: |
         cd build
         make -j"$(nproc)" unittests
-    # TriangleMesh.CreateMeshSphere writes one triangle past the end of its
-    # allocation (80 triangles allocated, element 80 written), which the
-    # simulator's exact bounds check reports as a fault. A fault ends the
-    # process's CUDA context, so it runs on its own, last.
     - name: Unit tests on the simulated GPU
       run: |
         cd build
-        vgpu run "$(find . -name unittests -type f | head -n 1)" --gtest_filter=-TriangleMesh.CreateMeshSphere
-    - name: TriangleMesh.CreateMeshSphere on its own (known out-of-bounds write)
-      continue-on-error: true
-      run: |
-        cd build
-        vgpu run "$(find . -name unittests -type f | head -n 1)" --gtest_filter=TriangleMesh.CreateMeshSphere
+        vgpu run "$(find . -name unittests -type f | head -n 1)"
