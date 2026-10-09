@@ -56,19 +56,16 @@ jobs:
       run: |
         cd build
         make -j"$(nproc)" unittests
+    # TriangleMesh.CreateMeshSphere writes one triangle past the end of its
+    # allocation (80 triangles allocated, element 80 written), which the
+    # simulator's exact bounds check reports as a fault. A fault ends the
+    # process's CUDA context, so it runs on its own, last.
     - name: Unit tests on the simulated GPU
+      run: |
+        cd build
+        vgpu run "$(find . -name unittests -type f | head -n 1)" --gtest_filter=-TriangleMesh.CreateMeshSphere
+    - name: TriangleMesh.CreateMeshSphere on its own (known out-of-bounds write)
       continue-on-error: true
       run: |
         cd build
-        vgpu run "$(find . -name unittests -type f | head -n 1)"
-    - name: Trace the kd-tree builder (diagnostic)
-      run: |
-        cd build
-        U="$(find . -name unittests -type f | head -n 1)"
-        for w in 0 1 2 3 4 5 6 7; do
-          VGPU_SASS_TRACE=$w VGPU_SASS_TRACE_KERNEL=SplitNodes timeout 900 vgpu run "$U" --gtest_filter=KDTreeFlann.SearchKNN > /tmp/t$w.txt 2>&1 || true
-          N="$(grep -n 'VirtualGPU error' /tmp/t$w.txt | head -n 1 | cut -d: -f1)"
-          echo "== warp $w (error at line ${N:-none}, $(wc -l < /tmp/t$w.txt) lines)"
-          [ -n "$N" ] && sed -n "$((N-14)),$((N-1))p" /tmp/t$w.txt | cut -c1-150
-        done
-        grep -n -E 'BSSY|BSYNC|BMOV|BAR|EXIT|WARPSYNC|CALL|RET' /tmp/t0.txt | head -80 | cut -c1-120
+        vgpu run "$(find . -name unittests -type f | head -n 1)" --gtest_filter=TriangleMesh.CreateMeshSphere
